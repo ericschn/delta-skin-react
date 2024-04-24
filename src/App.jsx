@@ -31,19 +31,34 @@ function App() {
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
           };
+          console.log(reader.result);
           img.src = reader.result;
         };
         reader.readAsDataURL(selectedFile);
-      } else if (selectedFile.type === 'application/zip') {
-        console.log('this is a zip');
-      } else if (selectedFile.name.match(/\.deltaskin$/i)) {
-        console.log('deltaskin file extension detected');
+      } else if (
+        selectedFile.type === 'application/zip' ||
+        selectedFile.name.match(/\.deltaskin$/i)
+      ) {
+        console.log('deltaskin or zip file extension detected');
         const reader = new FileReader();
         reader.onload = () => {
           // unzipping
           // TODO: error handling
           console.log('unzipping starting');
           zip.loadAsync(reader.result).then(async (zipData) => {
+            const pngs = zip.file(/\.png$/);
+            const img = new Image();
+            img.onload = () => {
+              console.log('img.onload running');
+              console.log(img.src);
+              const canvas = canvasRef.current;
+              const ctx = canvas.getContext('2d');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              ctx.drawImage(img, 0, 0);
+            };
+            img.src = URL.createObjectURL(await pngs[0].async('blob'));
+
             const infoJson = await zipData.file('info.json').async('string');
             const info = JSON.parse(infoJson);
             // check for debug setting in json, we don't want that on
@@ -64,6 +79,23 @@ function App() {
       };
       reader.readAsText(selectedFile);
     }
+  };
+
+  const addPngToCanvas = (png) => {
+    console.log('User uploaded PNG');
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(png);
   };
 
   return (
